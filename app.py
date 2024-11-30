@@ -2,10 +2,9 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 
-# Functie om pagina's over een combinatie van thema's te scrapen
-def scrape_theme_pages(themes):
+# Functie om pagina's op basis van een zoekterm te scrapen
+def scrape_pages(search_query):
     base_url = "https://www.allesoversport.nl"
-    search_query = " ".join(themes)
     search_url = f"{base_url}/?s={'+'.join(search_query.split())}"
     
     # Haal de HTML op van de zoekpagina
@@ -41,38 +40,15 @@ def summarize_article(url):
         return f"Fout bij het laden van de samenvatting: {e}"
 
 # Streamlit-app interface
-st.title("AllesOverSport.nl Thema-Scraper")
+st.title("AllesOverSport.nl Zoektool")
 
-# Gebruiker selecteert thema-combinatie
-st.header("Kies een combinatie van thema's")
+# Gebruiker invoer via zoekbalk
+search_query = st.text_input("Zoek naar artikelen (bijv. 'sport en gezondheid', 'kinderen zwemmen'):")
 
-# Thema-opties
-doelgroep = st.selectbox(
-    "Doelgroep:",
-    ["Kinderen", "Volwassenen", "Senioren", "Professionals", "Iedereen"]
-)
-
-omgeving = st.selectbox(
-    "Omgeving:",
-    ["Binnen", "Buiten", "Zwemlocatie", "Sportvereniging", "School"]
-)
-
-kennistopic = st.selectbox(
-    "Kennistopic:",
-    ["Gezondheid", "Beweging", "Voeding", "Veiligheid", "Inclusie"]
-)
-
-type_activiteit = st.selectbox(
-    "Type Activiteit:",
-    ["Sport", "Recreatie", "Educatie", "Competitie", "Therapie"]
-)
-
-# Activeren van zoekopdracht
-if st.button("Zoek Artikelen"):
-    themes = [doelgroep, omgeving, kennistopic, type_activiteit]
-    st.write(f"Zoeken naar artikelen voor: **{', '.join(themes)}**")
+if st.button("Zoek Artikelen") and search_query:
+    st.write(f"Zoeken naar artikelen met de term(en): **{search_query}**")
     
-    articles = scrape_theme_pages(themes)
+    articles = scrape_pages(search_query)
     
     if articles:
         st.write(f"**{len(articles)} artikelen gevonden**")
@@ -83,4 +59,4 @@ if st.button("Zoek Artikelen"):
                 st.write(summary)
                 st.markdown(f"[Lees meer]({article['url']})")
     else:
-        st.warning("Geen artikelen gevonden voor deze thema-combinatie.")
+        st.warning("Geen artikelen gevonden voor deze zoekopdracht.")
