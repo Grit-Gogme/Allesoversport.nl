@@ -2,61 +2,43 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 
-# Functie om pagina's op basis van een zoekterm te scrapen
 def scrape_pages(search_query):
     base_url = "https://www.allesoversport.nl"
     search_url = f"{base_url}/?s={'+'.join(search_query.split())}"
+
+    # Debug: Laat de zoek-URL zien
+    st.write(f"Zoek-URL: {search_url}")
     
-    # Haal de HTML op van de zoekpagina
-    response = requests.get(search_url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    
+    response = requests.get(search_url, headers=headers)
     if response.status_code != 200:
-        st.error("Kan de website niet bereiken. Controleer de URL of probeer later opnieuw.")
+        st.error(f"Kan de website niet bereiken (statuscode: {response.status_code}).")
         return []
 
     soup = BeautifulSoup(response.text, "html.parser")
-    
-    # Zoek alle links in de zoekresultaten
+
+    # Zoek artikelen
     articles = []
     for link in soup.find_all("a", href=True):
         url = link["href"]
         title = link.text.strip()
-        if base_url in url and title:  # Filter relevante links
+        if "allesoversport.nl" in url and title:
             articles.append({"url": url, "title": title})
     
+    if not articles:
+        st.warning("Geen artikelen gevonden. Controleer de zoekterm of de website-structuur.")
     return articles
 
-# Functie om samenvattingen van artikelen te maken
-def summarize_article(url):
-    try:
-        response = requests.get(url)
-        if response.status_code != 200:
-            return "Artikel kan niet worden geladen."
-
-        soup = BeautifulSoup(response.text, "html.parser")
-        paragraphs = soup.find_all("p")
-        summary = " ".join([p.text for p in paragraphs[:3]])  # Neem de eerste 3 paragrafen
-        return summary
-    except Exception as e:
-        return f"Fout bij het laden van de samenvatting: {e}"
-
-# Streamlit-app interface
 st.title("AllesOverSport.nl Zoektool")
 
-# Gebruiker invoer via zoekbalk
-search_query = st.text_input("Zoek naar artikelen (bijv. 'sport en gezondheid', 'kinderen zwemmen'):")
+search_query = st.text_input("Zoek naar artikelen (bijv. 'sport en gezondheid'):")
 
 if st.button("Zoek Artikelen") and search_query:
-    st.write(f"Zoeken naar artikelen met de term(en): **{search_query}**")
-    
+    st.write(f"Zoeken naar: **{search_query}**")
     articles = scrape_pages(search_query)
     
-    if articles:
-        st.write(f"**{len(articles)} artikelen gevonden**")
-        
-        for article in articles:
-            with st.expander(article["title"]):
-                summary = summarize_article(article["url"])
-                st.write(summary)
-                st.markdown(f"[Lees meer]({article['url']})")
-    else:
-        st.warning("Geen artikelen gevonden voor deze zoekopdracht.")
+    for article in articles:
+        st.write(f"- [{article['title']}]({article['url']})")
